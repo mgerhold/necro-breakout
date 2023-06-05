@@ -1,30 +1,28 @@
 #include <SDL.h>
 #include <stdbool.h>
 
-#define SCREEN_WIDTH 800
-#define SCREEN_HEIGHT 600
-#define PADDLE_WIDTH 200
-#define PADDLE_HEIGHT 30
-#define PADDLE_MARGIN 20
-#define PLAY_BALL_WIDTH 20
-#define PLAY_BALL_HEIGHT 20
+#define SCREEN_WIDTH 800 // Bildschirm-Breite
+#define SCREEN_HEIGHT 600 // Bildschirm-Höhe
+
+#define PADDLE_WIDTH 200 // Schläger-Breite
+#define PADDLE_HEIGHT 30 // Schläger-Höhe
+#define PADDLE_MARGIN 20 // Schläger Abstand zum Rand
+
+#define BALL_WIDTH 20 // Spielball-Breite
+#define BALL_HEIGHT 20 // Spielball-Höhe
 
 int main(int argc, char** argv) {
-    // Initialize SDL2
+    // Initialisiere SDL2
     SDL_Init(SDL_INIT_VIDEO);
 
-    // Create a window
+    // Erstelle ein Fenster
     SDL_Window* window = SDL_CreateWindow(
             "SDL2 Window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT,
             SDL_WINDOW_SHOWN
     );
 
-    // create the renderer
+    // Erstelle den Renderer
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
-
-    // aktuelle Ballgeschwindigkeit
-    int speed_x = -1; // Variablendefinition mit Initialisierung
-    int speed_y = -1;
 
     // Zeitpunkt des letzten Updates
     Uint32 last_update_ticks = SDL_GetTicks();
@@ -32,36 +30,40 @@ int main(int argc, char** argv) {
     // Rechteck definieren
     SDL_Rect paddle; // Variablendefinition ohne Initialisierung
     paddle.x = (SCREEN_WIDTH - PADDLE_WIDTH) / 2;
-    paddle.y = SCREEN_HEIGHT - PADDLE_HEIGHT - PADDLE_MARGIN;
+    paddle.y = (SCREEN_HEIGHT - PADDLE_HEIGHT - PADDLE_MARGIN);
     paddle.w = PADDLE_WIDTH;
     paddle.h = PADDLE_HEIGHT;
 
-    SDL_Rect play_ball;
-    play_ball.x = (SCREEN_WIDTH - PLAY_BALL_WIDTH) / 2;
-    play_ball.y = SCREEN_HEIGHT - PADDLE_HEIGHT - PADDLE_MARGIN - PLAY_BALL_HEIGHT;
-    play_ball.w = PLAY_BALL_WIDTH;
-    play_ball.h = PLAY_BALL_HEIGHT;
+    SDL_Rect ball;
+    ball.x = (SCREEN_WIDTH - BALL_WIDTH) / 2;
+    ball.y = (SCREEN_HEIGHT - PADDLE_HEIGHT - PADDLE_MARGIN - BALL_HEIGHT);
+    ball.w = BALL_WIDTH;
+    ball.h = BALL_HEIGHT;
+    int speed_x = -2; // Variablendefinition mit Initialisierung
+    int speed_y = -2; // Ball-Geschwindigkeit
 
-    // Run the main loop
+    // Spiel-Schleife
     bool quit = false;
     while (!quit) {
 
-        // event handling
+        // Ereignisse abfragen
         SDL_Event event;
-        while (SDL_PollEvent(&event)) {
+        while (SDL_PollEvent(&event) != 0) {
             if (event.type == SDL_QUIT) {
                 quit = true;
             } else if (event.type == SDL_KEYDOWN) {
+                
                 if (event.key.keysym.sym == SDLK_a) {
                     printf("Die Taste 'A' wurde gedrückt. \n");
-                    paddle.x = paddle.x - 10;
+                    paddle.x = paddle.x - 20;
                     if (paddle.x < 0) {
                         paddle.x = 0;
                     }
                 }
+                
                 if (event.key.keysym.sym == SDLK_d) {
                     printf("Die Taste 'D' wurde gedrückt. \n");
-                    paddle.x = paddle.x + 10;
+                    paddle.x = paddle.x + 20;
                     if (paddle.x > SCREEN_WIDTH - PADDLE_WIDTH) {
                         paddle.x = SCREEN_WIDTH - PADDLE_WIDTH;
                     }
@@ -81,36 +83,39 @@ int main(int argc, char** argv) {
                                                                  // zum letzten Mal den Ball bewegt habe?
         if (elapsed_ticks > 10) {
             // Die letzte Ballbewegung ist mehr als 10 ms her.
-            play_ball.x = play_ball.x - 1;
-            play_ball.y = play_ball.y - 1;
+            ball.x = ball.x + speed_x;
+            ball.y = ball.y + speed_y;
+            if (ball.x <= 0 || ball.x >= SCREEN_WIDTH - BALL_WIDTH) { 
+                speed_x *= -1;
+            }
+ 
+            if (ball.y <= 0 || ball.y >= SCREEN_HEIGHT - PADDLE_HEIGHT - PADDLE_MARGIN - BALL_HEIGHT) { //apprall von der oberfläche
+                speed_y *= -1;
+            }
 
             // Ich merke mir, dass ich den Ball JETZT GERADE bewegt habe.
             last_update_ticks = update_ticks; // Zuweisung in eine bestehende Variable hinein.
         }
 
 
-        // rendering
+        // Rendern
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // 1. Farbe setzen
+        SDL_RenderClear(renderer);                      // 2. Hintergrund mit der Farbe "clearen"
 
-        // 1. Farbe setzen
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-
-        // 2. Hintergrund mit der Farbe "clearen"
-        SDL_RenderClear(renderer);
-
-        // Rechteck zeichnen
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        // Schläger zeichnen
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);       // Schläger-Farbe (R,G,B,A)
         SDL_RenderFillRect(renderer, &paddle);
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        SDL_RenderFillRect(renderer, &play_ball);
 
-        // 3. alles anzeigen (Backbuffer und Frontbuffer tauschen)
+        // Ball zeichnen
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);   // Ball-Farbe (R,G,B,A)
+        SDL_RenderFillRect(renderer, &ball);
+
+        // 3. Inhalt anzeigen (Backbuffer und Frontbuffer tauschen)
         SDL_RenderPresent(renderer);
     }
 
-    // destroy the renderer
-    SDL_DestroyRenderer(renderer);
-    // Destroy the window and quit SDL2
-    SDL_DestroyWindow(window);
+    SDL_DestroyRenderer(renderer); // Löschen des Renderers
+    SDL_DestroyWindow(window); // Löschen des Fensters
     SDL_Quit();
 
     return 0;
