@@ -44,6 +44,7 @@ int main(int argc, char** argv) {
 
     // Spiel-Schleife
     bool quit = false;
+    bool gameover = false;
     while (!quit) {
 
         // Ereignisse abfragen
@@ -81,22 +82,25 @@ int main(int argc, char** argv) {
         Uint32 update_ticks = SDL_GetTicks();                    // die aktuelle "Uhrzeit" (in ms)
         Uint32 elapsed_ticks = update_ticks - last_update_ticks; // Wie viel Zeit (in ms) ist vergangen, seitdem ich
                                                                  // zum letzten Mal den Ball bewegt habe?
-        if (elapsed_ticks > 10) {
-            // Die letzte Ballbewegung ist mehr als 10 ms her.
+        if (elapsed_ticks > 10) { // Die letzte Ballbewegung ist mehr als 10 ms her.
             ball.x = ball.x + speed_x;
             ball.y = ball.y + speed_y;
             if (ball.x <= 0 || ball.x >= SCREEN_WIDTH - BALL_WIDTH) { 
                 speed_x *= -1;
             }
- 
-            if (ball.y <= 0 || ball.y >= SCREEN_HEIGHT - PADDLE_HEIGHT - PADDLE_MARGIN - BALL_HEIGHT) { //apprall von der oberfläche
-                speed_y *= -1;
+            if (ball.y <= 0 || ball.y + BALL_HEIGHT >= paddle.y && ball.x >= paddle.x && ball.x + BALL_WIDTH <= paddle.x + PADDLE_WIDTH) {
+                    speed_y *= -1;
             }
-
+            if (ball.y >= SCREEN_HEIGHT - BALL_HEIGHT && !gameover) {
+                speed_y = 0;
+                speed_x = 0;
+                printf("GAME OVER! \n");
+                gameover = true;
+            }
             // Ich merke mir, dass ich den Ball JETZT GERADE bewegt habe.
             last_update_ticks = update_ticks; // Zuweisung in eine bestehende Variable hinein.
+            
         }
-
 
         // Rendern
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // 1. Farbe setzen
